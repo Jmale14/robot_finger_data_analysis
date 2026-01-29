@@ -1,0 +1,130 @@
+import numpy as np
+from sklearn.metrics import f1_score
+from plot_training_results import plot_training_results
+from plot_confusion_matrix import plot_confusion_matrix
+# from plot_example_data import plot_example_data
+import datetime
+from hparams import hp_dict
+from model_training_utils import create_cnnlstm_model, time_divide_data, load_data, save_results
+
+
+
+def run_trial(dataset, recognition_type, hparams, folds, verbose=0, outputModel=False):
+    # Lists to store results
+    accuracy_scores = []
+    rec_scores = []
+    prec_scores = []
+    f1_int_scores = []
+    f1_scores = []
+    fold_histories = []
+    all_y_true = []
+    all_y_pred = []
+
+    normalized_folds, window_size, num_classes, encoder = load_data("processed_data/"+dataset, recognition_type)
+    time_div_folds = time_divide_data(normalized_folds)
+
+    # Train the model on each fold
+    for i, (train_windows, train_labels, test_windows, test_labels) in enumerate(time_div_folds):
+        if i >= folds:
+            break
+        else:
+            print(f'Training on fold {i+1}')
+            if recognition_type == "texture":
+                train_labels = train_labels[:, 0]
+                test_labels = test_labels[:, 0]
+            elif recognition_type == "softness":
+                train_labels = train_labels[:, 1]
+                test_labels = test_labels[:, 1]
+            else:
+                raise ValueError("recognition_type must be either 'texture' or 'softness'")
+
+            # Shuffle data
+            shuffle_indices = np.random.permutation(len(train_windows))
+            train_windows = np.array(train_windows)[shuffle_indices]
+            shuffled_labels = np.array(train_labels)[shuffle_indices]
+
+            # train_windows = np.array(train_windows)
+            test_windows = np.array(test_windows)
+            if recognition_type == "texture":
+                train_labels_encoded = encoder.transform(shuffled_labels.reshape(-1, 1).astype(int))
+                test_labels_encoded = encoder.transform(np.array(test_labels).reshape(-1, 1).astype(int))
+            elif recognition_type == "softness":
+                train_labels_encoded = encoder.transform(shuffled_labels.reshape(-1, 1))
+                test_labels_encoded = encoder.transform(np.array(test_labels).reshape(-1, 1))
+
+            window_size = train_windows[0].shape
+            model = create_cnnlstm_model(window_size, num_classes, hparams)
+            
+            print(f"Input train data shape: {train_windows.shape}")
+            history = model.fit(train_windows, train_labels_encoded, epochs=hparams["HP_EPOCHS"], batch_size=hparams["HP_BATCH"], validation_data=(test_windows, test_labels_encoded), shuffle=True, verbose=verbose)
+            if outputModel:
+                model.save(f"models/{dataset}_{recognition_type}_Model.keras")
+
+            # Evaluate on Test data
+            print(f"Input test data shape: {test_windows.shape}")
+            test_loss, test_accuracy, test_prec, test_rec, test_f1_int = model.evaluate(test_windows, test_labels_encoded, verbose=0)
+            y_test_pred = model.predict(test_windows)
+            y_test_true = np.argmax(test_labels_encoded, axis=1)
+            y_test_pred = np.argmax(y_test_pred, axis=1)
+
+            # Accumulate predictions and true labels for confusion matrix
+            all_y_true.append(y_test_true)
+            all_y_pred.append(y_test_pred)
+
+            # Calculate F1 score for test
+            f1 = f1_score(y_test_true, y_test_pred, average='macro')
+
+            accuracy_scores.append(test_accuracy)
+            rec_scores.append(test_rec)
+            prec_scores.append(test_prec)
+            f1_scores.append(f1)
+            f1_int_scores.append(test_f1_int)
+            fold_histories.append(history)
+
+    # Print results
+    print(f"Test Accuracy: {np.mean(accuracy_scores):.4f} ± {np.std(accuracy_scores):.4f}")
+    print(f"Test F1 Score: {np.mean(f1_scores):.4f} ± {np.std(f1_scores):.4f}")
+    print(f"Test F1 Internal Score: {np.mean(f1_int_scores):.4f} ± {np.std(f1_int_scores):.4f}")
+    print(f"Test Precision: {np.mean(prec_scores):.4f} ± {np.std(prec_scores):.4f}")
+    print(f"Test Recall: {np.mean(rec_scores):.4f} ± {np.std(rec_scores):.4f}")
+
+    results = {"acc"  : np.mean(accuracy_scores),
+               "f1"   : np.mean(f1_scores), 
+               "prec" : np.mean(prec_scores), 
+               "rec"  : np.mean(rec_scores), 
+               "yTrue": all_y_true, 
+               "yPred": all_y_pred, 
+               "hist" : fold_histories}
+
+    return results, encoder.categories_
+
+
+
+if __name__ == "__main__":   
+    dataset = "softness" # "texture", "softness", "text&soft"
+    if dataset == "text&soft":
+        recognition_type = "texture" # "texture", "softness" <== Choose one for combined data
+    else:
+        recognition_type = dataset
+
+    hparams = hp_dict[f"{dataset}_{recognition_type}"]
+
+    folds2Test = 5
+    outputModel=False
+    if outputModel:
+        folds2Test = 1
+
+    results, categories = run_trial(dataset, recognition_type, hparams, folds2Test, verbose=1, outputModel=outputModel)
+
+    # Plot confusion matrix
+    plot_confusion_matrix([x for xs in results["yTrue"] for x in xs], [x for xs in results["yPred"] for x in xs], categories)
+
+    # Plot average training history across folds
+    plot_training_results(results["hist"])
+
+    hparam_hist = []
+    hparam_hist = [["trial"] + [hprm for hprm in hparams.keys()]]
+    hparam_hist.append([1] + [hprm for hprm in hparams.values()])
+    save_results(results, folds2Test, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), hparam_hist)
+
+    print("Done")
