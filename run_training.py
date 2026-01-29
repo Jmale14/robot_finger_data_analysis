@@ -1,15 +1,15 @@
+import os
 import numpy as np
 from sklearn.metrics import f1_score
-from plot_training_results import plot_training_results
-from plot_confusion_matrix import plot_confusion_matrix
-# from plot_example_data import plot_example_data
+from utils.plot_training_results import plot_training_results
+from utils.plot_confusion_matrix import plot_confusion_matrix
 import datetime
 from hparams import hp_dict
-from model_training_utils import create_cnnlstm_model, time_divide_data, load_data, save_results
+from utils.model_training_utils import create_cnnlstm_model, time_divide_data, load_data, save_results
 
 
 
-def run_trial(dataset, recognition_type, hparams, folds, verbose=0, outputModel=False):
+def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, outputModel=False):
     # Lists to store results
     accuracy_scores = []
     rec_scores = []
@@ -43,7 +43,6 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, outputModel=
             train_windows = np.array(train_windows)[shuffle_indices]
             shuffled_labels = np.array(train_labels)[shuffle_indices]
 
-            # train_windows = np.array(train_windows)
             test_windows = np.array(test_windows)
             if recognition_type == "texture":
                 train_labels_encoded = encoder.transform(shuffled_labels.reshape(-1, 1).astype(int))
@@ -57,7 +56,9 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, outputModel=
             
             print(f"Input train data shape: {train_windows.shape}")
             history = model.fit(train_windows, train_labels_encoded, epochs=hparams["HP_EPOCHS"], batch_size=hparams["HP_BATCH"], validation_data=(test_windows, test_labels_encoded), shuffle=True, verbose=verbose)
+            
             if outputModel:
+                os.makedirs('models', exist_ok=True)
                 model.save(f"models/{dataset}_{recognition_type}_Model.keras")
 
             # Evaluate on Test data
@@ -101,20 +102,20 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, outputModel=
 
 
 if __name__ == "__main__":   
-    dataset = "softness" # "texture", "softness", "text&soft"
+    dataset = "softness" # "texture", "softness", "text&soft" <== Choose dataset to evaluate
     if dataset == "text&soft":
-        recognition_type = "texture" # "texture", "softness" <== Choose one for combined data
+        recognition_type = "texture" # "texture", "softness" <== Choose one for combined text&soft dataset
     else:
         recognition_type = dataset
 
     hparams = hp_dict[f"{dataset}_{recognition_type}"]
 
     folds2Test = 5
-    outputModel=False
+    outputModel=True
     if outputModel:
         folds2Test = 1
 
-    results, categories = run_trial(dataset, recognition_type, hparams, folds2Test, verbose=1, outputModel=outputModel)
+    results, categories = run_trial(dataset, recognition_type, hparams, folds2Test, verbose=1, plot=True, outputModel=outputModel)
 
     # Plot confusion matrix
     plot_confusion_matrix([x for xs in results["yTrue"] for x in xs], [x for xs in results["yPred"] for x in xs], categories)
@@ -123,8 +124,9 @@ if __name__ == "__main__":
     plot_training_results(results["hist"])
 
     hparam_hist = []
-    hparam_hist = [["trial"] + [hprm for hprm in hparams.keys()]]
-    hparam_hist.append([1] + [hprm for hprm in hparams.values()])
-    save_results(results, folds2Test, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), hparam_hist)
+    hparam_hist = [[hprm for hprm in hparams.keys()]]
+    hparam_hist.append([hprm for hprm in hparams.values()])
+
+    save_results(results, folds2Test, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), hparam_hist, save_dir='results', file_appendix=f'{dataset}_{recognition_type}')
 
     print("Done")

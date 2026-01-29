@@ -3,8 +3,8 @@ import numpy as np
 import joblib
 from sklearn.preprocessing import OneHotEncoder
 
-from prepare_data_utils import load_csv_files, split_into_folds, fit_pca, plot_pca, create_windows, normalize_windows
-
+from utils.prepare_data_utils import load_csv_files, split_into_folds, fit_pca, plot_pca, create_windows, normalize_windows
+from utils.plot_example_data import plot_example_data
 
 dataset_type = "texture" # "texture", "softness", "text&soft"
 sampling_freq = 50 # Hz
@@ -25,6 +25,8 @@ else:
 data = load_csv_files(directory, sampling_freq)
 windows, labels = create_windows(data, window_size*sampling_freq, overlap=0)
 folds = split_into_folds(windows, labels, n_splits)
+
+plot_example_data(folds)
 
 # Normalise data and apply PCA
 normalized_folds = []

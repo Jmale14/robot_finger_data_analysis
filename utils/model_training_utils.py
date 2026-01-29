@@ -1,6 +1,7 @@
-import tensorflow as tf
-import numpy as np
+import os
 import csv
+import numpy as np
+import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Dropout, MaxPooling1D, Conv1D, Flatten, LSTM, TimeDistributed, Input
 from tensorflow.keras.regularizers import l2
@@ -8,7 +9,7 @@ from tensorflow.keras.metrics import Precision, Recall, F1Score
 import joblib
 
 
-def save_results(results, folds2Test, startTimeStamp, hparam_hist):
+def save_results(results, folds2Test, startTimeStamp, hparam_hist, save_dir='results', file_appendix=''):
     hist = {'loss': [],
             'accuracy': [],
             'f1_score': [],
@@ -23,8 +24,9 @@ def save_results(results, folds2Test, startTimeStamp, hparam_hist):
         hist[metric].append([f'std'] + list(np.std([history.history[metric] for history in results["hist"]], axis=0)))
         hist[metric].append([])
 
+    os.makedirs(save_dir, exist_ok=True)
     for m in ['loss', 'accuracy', 'f1_score']:
-        name = f"train_hist_{m}_" + startTimeStamp
+        name = f"{save_dir}/train_hist_{m}_{file_appendix}_" + startTimeStamp
         with open(f'{name}.csv', 'a') as out:
             for row in hist[m]:
                 for col in row:
@@ -36,7 +38,7 @@ def save_results(results, folds2Test, startTimeStamp, hparam_hist):
                     out.write('{0},'.format(col))
                 out.write('\n')
 
-    name = f"trial_details_" + startTimeStamp
+    name = f"{save_dir}/trial_details_{file_appendix}_" + startTimeStamp
     with open(f'{name}.csv', 'a') as out:
         write = csv.writer(out)
         write.writerows(hparam_hist)
@@ -53,8 +55,6 @@ def load_data(data_dir: str, data_type: str):
     elif data_type == 'softness':
         encoded_labels = joblib.load(data_dir+'/encoded_softness.pkl')
         encoder = joblib.load(data_dir+'/softnessencoder.pkl')
-
-    # plot_example_data(normalized_folds)
 
     # Define window size and number of classes
     window_size = normalized_folds[0][0][0].shape[0]  # Assuming all windows have the same size
