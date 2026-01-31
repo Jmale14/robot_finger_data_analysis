@@ -62,7 +62,7 @@ def load_data(data_dir: str, data_type: str):
 
     return normalized_folds, window_size, num_classes, encoder
 
-# Define the LSTM model for multi-class classification
+# Define the CNN-LSTM model for multi-class classification
 def create_cnnlstm_model(input_size, num_classes, hparams):
     modelInput = Input(shape=input_size)
     model = TimeDistributed(Conv1D(hparams["HP_FILTERS"], hparams["HP_KERNEL"], strides=1, activation='relu', padding="same"))(modelInput)
@@ -83,9 +83,27 @@ def create_cnnlstm_model(input_size, num_classes, hparams):
     print(model.summary())
     return model
 
-def time_divide_data(normalized_folds):
+# Define the CNN model for multi-class classification
+def create_cnn_model(input_size, num_classes, hparams):
+    modelInput = Input(shape=input_size)
+    model = Conv1D(hparams["HP_FILTERS"], hparams["HP_KERNEL"], strides=1, activation='relu', padding="same")(modelInput)
+    model = Conv1D(hparams["HP_FILTERS"], hparams["HP_KERNEL"], strides=1, activation='relu', padding="same")(model)
+    model = MaxPooling1D(hparams["HP_POOL"])(model)
+    model = Flatten()(model)
+    model = Dense(hparams["HP_H_UNITS"], activation='relu', kernel_regularizer=l2(hparams["HP_L2_LAMBDA"]))(model)
+    model = Dropout(0.5)(model)
+    model = Dense(num_classes, activation='softmax')(model)  # Output layer with softmax for multi-class
+
+    model = Model(modelInput, model)
+
+    opt = tf.keras.optimizers.Adam(learning_rate=hparams["HP_LR"])
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy', Precision(name='precision'), Recall(name='recall'), F1Score(average='macro')])
+    
+    print(model.summary())
+    return model
+
+def time_divide_data(normalized_folds, win_size=10):
     for i, (train_windows, train_labels, test_windows, test_labels) in enumerate(normalized_folds):
-        win_size = 10
         for j, win in enumerate(train_windows):
             startIdx = 0
             stopIdx = win_size

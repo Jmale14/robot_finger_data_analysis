@@ -5,11 +5,11 @@ from utils.plot_training_results import plot_training_results
 from utils.plot_confusion_matrix import plot_confusion_matrix
 import datetime
 from hparams import hp_dict
-from utils.model_training_utils import create_cnnlstm_model, time_divide_data, load_data, save_results
+from utils.model_training_utils import create_cnnlstm_model, create_cnn_model, time_divide_data, load_data, save_results
 
 
 
-def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, outputModel=False):
+def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, outputModel=False, use_pca=True, model_type="CNN-LSTM"):
     # Lists to store results
     accuracy_scores = []
     rec_scores = []
@@ -20,11 +20,13 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
     all_y_true = []
     all_y_pred = []
 
-    normalized_folds, window_size, num_classes, encoder = load_data("processed_data/"+dataset, recognition_type)
-    time_div_folds = time_divide_data(normalized_folds)
+    normalized_folds, window_size, num_classes, encoder = load_data("processed_data/"+dataset+f"/pca_{use_pca}", recognition_type)
+    if model_type == "CNN-LSTM": data_folds = time_divide_data(normalized_folds)
+    elif model_type == "CNN": data_folds = normalized_folds
+    else: raise ValueError("model_type must be either 'CNN-LSTM' or 'CNN'")
 
     # Train the model on each fold
-    for i, (train_windows, train_labels, test_windows, test_labels) in enumerate(time_div_folds):
+    for i, (train_windows, train_labels, test_windows, test_labels) in enumerate(data_folds):
         if i >= folds:
             break
         else:
@@ -52,14 +54,24 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
                 test_labels_encoded = encoder.transform(np.array(test_labels).reshape(-1, 1))
 
             window_size = train_windows[0].shape
-            model = create_cnnlstm_model(window_size, num_classes, hparams)
+            assert window_size == test_windows[0].shape, "Train and Test windows must have the same shape"
+            if use_pca: assert window_size[-1] == 5, f"PCA transformed data must have 5 features, got {window_size}"
+            else: assert window_size[-1] == 7, f"Non-PCA data must have 7 features, got {window_size}"
+            
+            if model_type == "CNN-LSTM":
+                assert window_size[0] == 19, f"CNN-LSTM model requires time-divided windows of size 19, got {window_size[0]}"
+                model = create_cnnlstm_model(window_size, num_classes, hparams)
+            elif model_type == "CNN":
+                assert window_size[0] == 100, f"Window size must be 100, got {window_size[0]}"
+                model = create_cnn_model(window_size, num_classes, hparams)
+            else: raise ValueError("model_type must be either 'CNN-LSTM' or 'CNN'")
             
             print(f"Input train data shape: {train_windows.shape}")
             history = model.fit(train_windows, train_labels_encoded, epochs=hparams["HP_EPOCHS"], batch_size=hparams["HP_BATCH"], validation_data=(test_windows, test_labels_encoded), shuffle=True, verbose=verbose)
             
             if outputModel:
                 os.makedirs('models', exist_ok=True)
-                model.save(f"models/{dataset}_{recognition_type}_Model.keras")
+                model.save(f"models/{dataset}_{recognition_type}_pca{use_pca}_{model_type}_Model.keras")
 
             # Evaluate on Test data
             print(f"Input test data shape: {test_windows.shape}")
@@ -102,20 +114,21 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
 
 
 if __name__ == "__main__":   
-    dataset = "softness" # "texture", "softness", "text&soft" <== Choose dataset to evaluate
+    dataset = "texture" # "texture", "softness", "text&soft" <== Choose dataset to evaluate
     if dataset == "text&soft":
         recognition_type = "texture" # "texture", "softness" <== Choose one for combined text&soft dataset
     else:
         recognition_type = dataset
 
     hparams = hp_dict[f"{dataset}_{recognition_type}"]
-
+    use_pca = True
+    model_type = "CNN-LSTM" # "CNN-LSTM" or "CNN"
     folds2Test = 5
-    outputModel=True
+    outputModel=False
     if outputModel:
         folds2Test = 1
 
-    results, categories = run_trial(dataset, recognition_type, hparams, folds2Test, verbose=1, plot=True, outputModel=outputModel)
+    results, categories = run_trial(dataset, recognition_type, hparams, folds2Test, verbose=1, plot=True, outputModel=outputModel, use_pca=use_pca, model_type=model_type)
 
     # Plot confusion matrix
     plot_confusion_matrix([x for xs in results["yTrue"] for x in xs], [x for xs in results["yPred"] for x in xs], categories)
@@ -127,6 +140,6 @@ if __name__ == "__main__":
     hparam_hist = [[hprm for hprm in hparams.keys()]]
     hparam_hist.append([hprm for hprm in hparams.values()])
 
-    save_results(results, folds2Test, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), hparam_hist, save_dir='results', file_appendix=f'{dataset}_{recognition_type}')
+    save_results(results, folds2Test, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), hparam_hist, save_dir='results', file_appendix=f'{dataset}_{recognition_type}_pca{use_pca}_{model_type}')
 
     print("Done")
