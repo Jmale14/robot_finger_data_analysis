@@ -1,16 +1,12 @@
+import set_env_opts
+
 import os
 import numpy as np
 import joblib
-import random
 from sklearn.preprocessing import OneHotEncoder
 
 from utils.prepare_data_utils import load_csv_files, split_into_folds, fit_pca, plot_pca, create_windows, normalize_windows
 from utils.plot_example_data import plot_example_data
-
-SEED = 42
-os.environ["PYTHONHASHSEED"] = str(SEED)
-random.seed(SEED)
-np.random.seed(SEED)
 
 dataset_type = "texture" # "texture", "softness", "text&soft"
 sampling_freq = 50 # Hz

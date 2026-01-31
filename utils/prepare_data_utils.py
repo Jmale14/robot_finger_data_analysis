@@ -8,10 +8,6 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 
-SEED = 42
-os.environ["PYTHONHASHSEED"] = str(SEED)
-random.seed(SEED)
-np.random.seed(SEED)
 
 def getSoftness(filename):
     if (filename.__contains__('dragon')) or (filename.__contains__('Dragon')):

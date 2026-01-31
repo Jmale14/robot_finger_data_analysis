@@ -1,3 +1,5 @@
+import set_env_opts
+
 import os
 import numpy as np
 import random
@@ -8,10 +10,6 @@ import datetime
 from hparams import hp_dict
 from utils.model_training_utils import create_cnnlstm_model, create_cnn_model, time_divide_data, load_data, save_results
 
-SEED = 42
-os.environ["PYTHONHASHSEED"] = str(SEED)
-random.seed(SEED)
-np.random.seed(SEED)
 
 def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, outputModel=False, use_pca=True, model_type="CNN-LSTM"):
     # Lists to store results
