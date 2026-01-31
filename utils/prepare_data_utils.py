@@ -1,12 +1,17 @@
 import pandas as pd
 import os
 import numpy as np
+import random
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 
+SEED = 42
+os.environ["PYTHONHASHSEED"] = str(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
 
 def getSoftness(filename):
     if (filename.__contains__('dragon')) or (filename.__contains__('Dragon')):
@@ -106,9 +111,9 @@ def load_csv_files(directories, sampling_freq=50):
         return df
 
     for directory in directories:
-        for filename in os.listdir(directory):
+        for filename in sorted(os.listdir(directory)):
             if filename.startswith("material_"):
-                for fName in os.listdir(directory+"/"+filename):
+                for fName in sorted(os.listdir(directory+"/"+filename)):
                     if (fName.startswith("M") and fName.endswith(".csv")) or (fName.startswith("EXP") and fName.endswith(".csv")):
                         # Extract label from the filename
                         label = filename.split('_')[1]
@@ -117,7 +122,7 @@ def load_csv_files(directories, sampling_freq=50):
                         data_frames.append(process_new_data(label, softness, df))
                         total_files = total_files+1
             if filename.endswith("_just_softness"):
-                for fName in os.listdir(directory+"/"+filename):
+                for fName in sorted(os.listdir(directory+"/"+filename)):
                     if fName.endswith("delay150.csv"):
                         label = 18 # Add tape as material 18
                         softness = getSoftness(filename)
@@ -125,8 +130,8 @@ def load_csv_files(directories, sampling_freq=50):
                         data_frames.append(process_new_data(label, softness, df))
                         total_files = total_files+1
             if directory.endswith("softness&texture"):
-                for fabric in os.listdir(directory+"/"+filename):
-                    for fName in os.listdir(directory+"/"+filename+"/"+fabric):
+                for fabric in sorted(os.listdir(directory+"/"+filename)):
+                    for fName in sorted(os.listdir(directory+"/"+filename+"/"+fabric)):
                         if fName.endswith("delay100.csv"):
                             label =  fabric.split('fabric')[1]
                             softness = getSoftness(filename)

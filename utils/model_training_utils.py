@@ -6,7 +6,15 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Dropout, MaxPooling1D, Conv1D, Flatten, LSTM, TimeDistributed, Input
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.metrics import Precision, Recall, F1Score
+import random
 import joblib
+
+SEED = 42
+os.environ["PYTHONHASHSEED"] = str(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+tf.config.experimental.enable_op_determinism()
 
 
 def save_results(results, folds2Test, startTimeStamp, hparam_hist, save_dir='results', file_appendix=''):
@@ -125,3 +133,5 @@ def time_divide_data(normalized_folds, win_size=10):
             test_windows[j] = np.array(new_win)
         
     return normalized_folds
+
+

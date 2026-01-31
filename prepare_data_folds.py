@@ -1,10 +1,16 @@
 import os
 import numpy as np
 import joblib
+import random
 from sklearn.preprocessing import OneHotEncoder
 
 from utils.prepare_data_utils import load_csv_files, split_into_folds, fit_pca, plot_pca, create_windows, normalize_windows
 from utils.plot_example_data import plot_example_data
+
+SEED = 42
+os.environ["PYTHONHASHSEED"] = str(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
 
 dataset_type = "texture" # "texture", "softness", "text&soft"
 sampling_freq = 50 # Hz
@@ -54,11 +60,14 @@ if use_pca:
 # One-hot encode textures and softness
 labels_encoder = OneHotEncoder(sparse_output=False)
 texture_labels = np.array(labels[:, 0].astype(int)).reshape(-1, 1)
-encoded_texture = labels_encoder.fit_transform(texture_labels)
+labels_encoder.fit(np.sort(np.unique(texture_labels)).reshape(-1,1))
+encoded_texture = labels_encoder.transform(texture_labels)
 
 softness_encoder = OneHotEncoder(sparse_output=False)
 softness = np.array(labels[:, 1]).reshape(-1, 1)
-encoded_softness = softness_encoder.fit_transform(softness)
+softness_encoder.fit(np.sort(np.unique(softness)).reshape(-1,1))
+encoded_softness = softness_encoder.transform(softness)
+
 
 # Save normalized folds and scalers
 save_dir = "processed_data"

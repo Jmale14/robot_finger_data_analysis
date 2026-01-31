@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import random
 from sklearn.metrics import f1_score
 from utils.plot_training_results import plot_training_results
 from utils.plot_confusion_matrix import plot_confusion_matrix
@@ -7,7 +8,10 @@ import datetime
 from hparams import hp_dict
 from utils.model_training_utils import create_cnnlstm_model, create_cnn_model, time_divide_data, load_data, save_results
 
-
+SEED = 42
+os.environ["PYTHONHASHSEED"] = str(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
 
 def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, outputModel=False, use_pca=True, model_type="CNN-LSTM"):
     # Lists to store results
@@ -121,9 +125,9 @@ if __name__ == "__main__":
         recognition_type = dataset
 
     hparams = hp_dict[f"{dataset}_{recognition_type}"]
-    use_pca = True
-    model_type = "CNN-LSTM" # "CNN-LSTM" or "CNN"
-    folds2Test = 5
+    use_pca = False
+    model_type = "CNN" # "CNN-LSTM" or "CNN"
+    folds2Test = 1
     outputModel=False
     if outputModel:
         folds2Test = 1
