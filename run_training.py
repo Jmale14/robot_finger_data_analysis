@@ -116,32 +116,39 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
 
 
 if __name__ == "__main__":   
-    dataset = "texture" # "texture", "softness", "text&soft" <== Choose dataset to evaluate
+    dataset = "text&soft" # "texture", "softness", "text&soft" <== Choose dataset to evaluate
     if dataset == "text&soft":
-        recognition_type = "texture" # "texture", "softness" <== Choose one for combined text&soft dataset
+        recognition_type = "softness" # "texture", "softness" <== Choose one for combined text&soft dataset
     else:
         recognition_type = dataset
 
     hparams = hp_dict[f"{dataset}_{recognition_type}"]
-    use_pca = False
+    use_pca = True
     model_type = "CNN" # "CNN-LSTM" or "CNN"
-    folds2Test = 1
+    folds2Test = 5
     outputModel=False
     if outputModel:
         folds2Test = 1
 
+    if dataset == "text&soft":
+        save_folder = f"results/{dataset}_{recognition_type}_pca{use_pca}_{model_type}"
+        os.makedirs(save_folder, exist_ok=True)
+    else:
+        save_folder = f"results/{recognition_type}_pca{use_pca}_{model_type}"
+        os.makedirs(save_folder, exist_ok=True)
+
     results, categories = run_trial(dataset, recognition_type, hparams, folds2Test, verbose=1, plot=True, outputModel=outputModel, use_pca=use_pca, model_type=model_type)
 
     # Plot confusion matrix
-    plot_confusion_matrix([x for xs in results["yTrue"] for x in xs], [x for xs in results["yPred"] for x in xs], categories)
+    plot_confusion_matrix([x for xs in results["yTrue"] for x in xs], [x for xs in results["yPred"] for x in xs], categories, save_dir=save_folder)
 
     # Plot average training history across folds
-    plot_training_results(results["hist"])
+    plot_training_results(results["hist"], save_dir=save_folder)
 
     hparam_hist = []
     hparam_hist = [[hprm for hprm in hparams.keys()]]
     hparam_hist.append([hprm for hprm in hparams.values()])
 
-    save_results(results, folds2Test, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), hparam_hist, save_dir='results', file_appendix=f'{dataset}_{recognition_type}_pca{use_pca}_{model_type}')
+    save_results(results, folds2Test, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), hparam_hist, save_dir=save_folder, file_appendix=f'{dataset}_{recognition_type}_pca{use_pca}_{model_type}')
 
     print("Done")

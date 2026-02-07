@@ -7,7 +7,7 @@ def plot_average_history(histories, metric):
     average_metric = np.mean([history.history[metric] for history in histories], axis=0)
     plt.plot(average_metric, label=f'Average {metric}')
 
-def plot_training_results(fold_histories):
+def plot_training_results(fold_histories, save_dir=None):
     # Create subplots
     fig, axes = plt.subplots(2, 2, figsize=(10, 12))
 
@@ -49,4 +49,8 @@ def plot_training_results(fold_histories):
     plt.tight_layout()
 
     # Show plots
-    plt.show()
+    if save_dir is not None:
+        plt.savefig(save_dir + '/training_history.png')
+        plt.close()
+    else:
+        plt.show()

@@ -5,7 +5,7 @@ import itertools
 import pandas as pd
 import seaborn as sn
 
-def plot_confusion_matrix(all_y_true, all_y_pred, categories=None):
+def plot_confusion_matrix(all_y_true, all_y_pred, categories=None, save_dir=None):
     classes = np.unique(all_y_true)
     num_classes = len(classes)
 
@@ -39,7 +39,12 @@ def plot_confusion_matrix(all_y_true, all_y_pred, categories=None):
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    plt.show()
+
+    if save_dir is not None:
+        plt.savefig(save_dir + '/confusion_matrix.png')
+        plt.close()
+    else:
+        plt.show()
 
 
 
@@ -67,7 +72,12 @@ def plot_confusion_matrix(all_y_true, all_y_pred, categories=None):
     plt.xlabel('Predicted Class', fontweight='bold')
     plt.ylabel('True Class', fontweight='bold')
     plt.yticks(rotation=0)
-    plt.show(block=True)
+
+    if save_dir is not None:
+        plt.savefig(save_dir + '/confusion_matrix_percent.png')
+        plt.close()
+    else:
+        plt.show(block=True)
 
 
 
