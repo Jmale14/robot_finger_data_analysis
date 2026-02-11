@@ -18,7 +18,7 @@ For each matieral type three trials are conducted. Each trial comprises the robo
 ├── hparams.py/             # Hyperparameters used for each classification task.
 ├── prepare_data_folds.py/  # Convert raw data into normalisaed windows ready for classification. Saves to /preprocessed_data.
 ├── run_training.py/        # Train and evaluate CNN-LSTM model on selected dataset type. Output results to /results and saved models to /models.
-├── README.md      # This file
+├── README.md               # This file
 ```
 
 ## Link to Publication

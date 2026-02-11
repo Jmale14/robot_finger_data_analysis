@@ -50,8 +50,7 @@ def plot_confusion_matrix(all_y_true, all_y_pred, categories=None, save_dir=None
 
     #LABELS = actions  # [i for i in range(num_actions)]
     if categories is not None:
-        df_cm = pd.DataFrame(conf_mat_perc, index=categories,
-                            columns=categories)
+        df_cm = pd.DataFrame(conf_mat_perc, index=categories, columns=categories)
     else:
         df_cm = pd.DataFrame(conf_mat_perc)
 
@@ -64,7 +63,10 @@ def plot_confusion_matrix(all_y_true, all_y_pred, categories=None, save_dir=None
                 zip(group_counts, group_percentages)]
 
     labels = np.asarray(labels).reshape(num_classes, num_classes)
-    plt.figure()
+    if num_classes > 10:
+        plt.figure(figsize=(12, 10), dpi=200, layout='tight')
+    else:
+        plt.figure(figsize=(6.5, 5), dpi=200, layout='tight')
     ax = sn.heatmap(df_cm, annot=labels, fmt='', cmap='Blues', square=True, vmin=0, vmax=1, cbar_kws={'label': 'Accuracy'})
     ax.xaxis.tick_top() # x axis on top
     ax.xaxis.set_label_position('top')

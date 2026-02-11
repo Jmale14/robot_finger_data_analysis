@@ -8,8 +8,8 @@ from utils.plot_training_results import plot_training_results
 from utils.plot_confusion_matrix import plot_confusion_matrix
 import datetime
 from hparams import hp_dict
-from utils.model_training_utils import create_cnnlstm_model, create_cnn_model, create_svm_model, create_random_forest_model, create_decision_tree_model, create_knn_model, create_logistic_regression_model, create_naive_bayes_model, time_divide_data, load_data, save_results
-
+from utils.model_training_utils import time_divide_data, load_data, save_results
+import utils.model_definitions as model_defs
 
 def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, outputModel=False, use_pca=True, model_type="CNN-LSTM"):
     # Lists to store results
@@ -24,8 +24,8 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
 
     normalized_folds, window_size, num_classes, encoder = load_data("processed_data/"+dataset+f"/pca_{use_pca}", recognition_type)
     if model_type == "CNN-LSTM": data_folds = time_divide_data(normalized_folds)
-    elif model_type in ["CNN", "SVM", "RF", "LR", "KNN", "NB", "DT"]: data_folds = normalized_folds
-    else: raise ValueError("model_type must be either 'CNN-LSTM', 'CNN', 'SVM', 'RF', 'LR', 'KNN', 'NB', or 'DT'")
+    elif model_type in ["CNN", "LSTM", "SVM", "RF", "LR", "KNN", "NB", "DT"]: data_folds = normalized_folds
+    else: raise ValueError("model_type must be either 'CNN-LSTM', 'CNN', 'LSTM', 'SVM', 'RF', 'LR', 'KNN', 'NB', or 'DT'")
 
     # Train the model on each fold
     for i, (train_windows, train_labels, test_windows, test_labels) in enumerate(data_folds):
@@ -62,26 +62,29 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
             
             if model_type == "CNN-LSTM":
                 assert window_size[0] == 19, f"CNN-LSTM model requires time-divided windows of size 19, got {window_size[0]}"
-                model = create_cnnlstm_model(window_size, num_classes, hparams)
+                model = model_defs.create_cnnlstm_model(window_size, num_classes, hparams)
             elif model_type == "CNN":
                 assert window_size[0] == 100, f"Window size must be 100, got {window_size[0]}"
-                model = create_cnn_model(window_size, num_classes, hparams)
+                model = model_defs.create_cnn_model(window_size, num_classes, hparams)
+            elif model_type == "LSTM":
+                assert window_size[0] == 100, f"Window size must be 100, got {window_size[0]}"
+                model = model_defs.create_lstm_model(window_size, num_classes, hparams)
             elif model_type == "SVM":
-                model = create_svm_model()
+                model = model_defs.create_svm_model()
             elif model_type == "RF":
-                model = create_random_forest_model()
+                model = model_defs.create_random_forest_model()
             elif model_type == "LR":
-                model = create_logistic_regression_model()
+                model = model_defs.create_logistic_regression_model()
             elif model_type == "KNN":
-                model = create_knn_model()
+                model = model_defs.create_knn_model()
             elif model_type == "NB":
-                model = create_naive_bayes_model()
+                model = model_defs.create_naive_bayes_model()
             elif model_type == "DT":
-                model = create_decision_tree_model()
-            else: raise ValueError("model_type must be either 'CNN-LSTM', 'CNN', 'SVM', 'RF', 'LR', 'KNN', 'NB', or 'DT'")
+                model = model_defs.create_decision_tree_model()
+            else: raise ValueError("model_type must be either 'CNN-LSTM', 'CNN', 'LSTM', 'SVM', 'RF', 'LR', 'KNN', 'NB', or 'DT'")
             
             print(f"Input train data shape: {train_windows.shape}")
-            if model_type == "CNN" or model_type == "CNN-LSTM":
+            if model_type in ["CNN", "CNN-LSTM", "LSTM"]:
                 history = model.fit(train_windows, train_labels_encoded, epochs=hparams["HP_EPOCHS"], batch_size=hparams["HP_BATCH"], validation_data=(test_windows, test_labels_encoded), shuffle=True, verbose=verbose)
             elif model_type in ["SVM", "RF", "LR", "KNN", "NB", "DT"]:
                 # Reshape data for SVM
@@ -98,7 +101,7 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
             # Evaluate on Test data
             print(f"Input test data shape: {test_windows.shape}")
             # test_loss, test_accuracy, test_prec, test_rec, test_f1_int = model.evaluate(test_windows, test_labels_encoded, verbose=0)
-            if model_type =="CNN" or model_type == "CNN-LSTM":
+            if model_type in ["CNN", "CNN-LSTM", "LSTM"]:
                 y_test_pred = model.predict(test_windows)
                 y_test_pred = np.argmax(y_test_pred, axis=1)
             elif model_type in ["SVM", "RF", "LR", "KNN", "NB", "DT"]:
@@ -154,10 +157,12 @@ if __name__ == "__main__":
         recognition_type = dataset
 
     hparams = hp_dict[f"{dataset}_{recognition_type}"]
-    use_pca = False
-    model_type = "SVM" # "CNN-LSTM", "CNN", "SVM", "RF", "LR", "KNN", "NB", "DT" <== Choose model type to evaluate
+    use_pca = True
+    model_type = "CNN-LSTM" # "CNN-LSTM", "CNN", "LSTM", "SVM", "RF", "LR", "KNN", "NB", "DT" <== Choose model type to evaluate
+    hparams["HP_EPOCHS"] = 500 if model_type == "LSTM" else hparams["HP_EPOCHS"] # Train CNN and LSTM for more epochs to ensure convergence
     folds2Test = 5
     outputModel=False
+    plot_results = True
     if outputModel:
         folds2Test = 1
 
@@ -171,10 +176,14 @@ if __name__ == "__main__":
     results, categories = run_trial(dataset, recognition_type, hparams, folds2Test, verbose=1, plot=True, outputModel=outputModel, use_pca=use_pca, model_type=model_type)
 
     # Plot confusion matrix
-    #plot_confusion_matrix([x for xs in results["yTrue"] for x in xs], [x for xs in results["yPred"] for x in xs], categories, save_dir=save_folder)
+    if plot_results:
+        if recognition_type == "texture":
+            categories = [c+1 for c in categories]
+        plot_confusion_matrix([x for xs in results["yTrue"] for x in xs], [x for xs in results["yPred"] for x in xs], categories, save_dir=save_folder)
 
     # Plot average training history across folds
-    #plot_training_results(results["hist"], save_dir=save_folder)
+    if plot_results and model_type in ["CNN", "CNN-LSTM", "LSTM"]:
+        plot_training_results(results["hist"], save_dir=save_folder)
 
     hparam_hist = []
     hparam_hist = [[hprm for hprm in hparams.keys()]]
