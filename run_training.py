@@ -157,7 +157,7 @@ if __name__ == "__main__":
         recognition_type = dataset
 
     hparams = hp_dict[f"{dataset}_{recognition_type}"]
-    use_pca = True
+    use_pca = False
     model_type = "CNN-LSTM" # "CNN-LSTM", "CNN", "LSTM", "SVM", "RF", "LR", "KNN", "NB", "DT" <== Choose model type to evaluate
     hparams["HP_EPOCHS"] = 500 if model_type == "LSTM" else hparams["HP_EPOCHS"] # Train CNN and LSTM for more epochs to ensure convergence
     folds2Test = 5

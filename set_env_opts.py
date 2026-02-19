@@ -3,7 +3,7 @@ import numpy as np
 import random
 import tensorflow as tf
 
-SEED = 42
+SEED = 40
 
 os.environ["PYTHONHASHSEED"] = str(SEED)
 random.seed(SEED)

@@ -67,6 +67,7 @@ def plot_confusion_matrix(all_y_true, all_y_pred, categories=None, save_dir=None
         plt.figure(figsize=(12, 10), dpi=200, layout='tight')
     else:
         plt.figure(figsize=(6.5, 5), dpi=200, layout='tight')
+    sn.set_theme(font_scale=1.3)
     ax = sn.heatmap(df_cm, annot=labels, fmt='', cmap='Blues', square=True, vmin=0, vmax=1, cbar_kws={'label': 'Accuracy'})
     ax.xaxis.tick_top() # x axis on top
     ax.xaxis.set_label_position('top')
