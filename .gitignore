@@ -2,3 +2,5 @@
 .venv
 __pycache__/
 /models
+/results
+/processed_data
