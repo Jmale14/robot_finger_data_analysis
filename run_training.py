@@ -7,11 +7,12 @@ from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_sc
 from utils.plot_training_results import plot_training_results
 from utils.plot_confusion_matrix import plot_confusion_matrix
 import datetime
-from hparams import hp_dict
+from hparams import hp_dict, abl_epochs
 from utils.model_training_utils import time_divide_data, load_data, save_results
 import utils.model_definitions as model_defs
+import argparse
 
-def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, outputModel=False, use_pca=True, model_type="CNN-LSTM"):
+def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, outputModel=False, use_pca=True, model_type="CNN-LSTM", modality="all"):
     # Lists to store results
     accuracy_scores = []
     rec_scores = []
@@ -22,7 +23,7 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
     all_y_true = []
     all_y_pred = []
 
-    normalized_folds, window_size, num_classes, encoder = load_data("processed_data/"+dataset+f"/pca_{use_pca}", recognition_type)
+    normalized_folds, window_size, num_classes, encoder = load_data("processed_data/"+dataset+f"/pca_{use_pca}", recognition_type, modality)
     if model_type == "CNN-LSTM": data_folds = time_divide_data(normalized_folds)
     elif model_type in ["CNN", "LSTM", "SVM", "RF", "LR", "KNN", "NB", "DT"]: data_folds = normalized_folds
     else: raise ValueError("model_type must be either 'CNN-LSTM', 'CNN', 'LSTM', 'SVM', 'RF', 'LR', 'KNN', 'NB', or 'DT'")
@@ -57,9 +58,17 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
 
             window_size = train_windows[0].shape
             assert window_size == test_windows[0].shape, "Train and Test windows must have the same shape"
-            if use_pca: assert window_size[-1] == 5, f"PCA transformed data must have 5 features, got {window_size}"
-            else: assert window_size[-1] == 7, f"Non-PCA data must have 7 features, got {window_size}"
-            
+            if modality == "all":
+                if use_pca: assert window_size[-1] == 5, f"PCA transformed data must have 5 features, got {window_size}"
+                else: assert window_size[-1] == 7, f"Non-PCA data must have 7 features, got {window_size}"
+            elif modality == "accel":
+                assert window_size[-1] == 3, f"Accelerometer data must have 3 features, got {window_size}"
+            elif modality == "gyro":
+                assert window_size[-1] == 3, f"Gyroscope data must have 3 features, got {window_size}"
+            elif modality == "press":
+                assert window_size[-1] == 1, f"Pressure data must have 1 feature, got {window_size}"
+            else: raise ValueError("modality must be one of 'accel', 'gyro', 'press', or 'all'")
+
             if model_type == "CNN-LSTM":
                 assert window_size[0] == 19, f"CNN-LSTM model requires time-divided windows of size 19, got {window_size[0]}"
                 model = model_defs.create_cnnlstm_model(window_size, num_classes, hparams)
@@ -148,33 +157,30 @@ def run_trial(dataset, recognition_type, hparams, folds, verbose=0, plot=False, 
     return results, encoder.categories_
 
 
-
-if __name__ == "__main__":   
-    dataset = "texture" # "texture", "softness", "text&soft" <== Choose dataset to evaluate
-    if dataset == "text&soft":
-        recognition_type = "softness" # "texture", "softness" <== Choose one for combined text&soft dataset
-    else:
-        recognition_type = dataset
-
+def setup_and_run_trial(dataset, recognition_type, modality, folds2Test, outputModel, plot_results, use_pca, model_type, save_folder_app=""):
     hparams = hp_dict[f"{dataset}_{recognition_type}"]
-    use_pca = False
-    model_type = "CNN-LSTM" # "CNN-LSTM", "CNN", "LSTM", "SVM", "RF", "LR", "KNN", "NB", "DT" <== Choose model type to evaluate
     hparams["HP_EPOCHS"] = 500 if model_type == "LSTM" else hparams["HP_EPOCHS"] # Train CNN and LSTM for more epochs to ensure convergence
-    folds2Test = 5
-    outputModel=False
-    plot_results = True
-    if outputModel:
-        folds2Test = 1
-
+    if modality != "all":
+        hparams["HP_EPOCHS"] = abl_epochs[f"{dataset}_{recognition_type}"][modality]
+    
     if dataset == "text&soft":
-        save_folder = f"results/{dataset}_{recognition_type}_pca{use_pca}_{model_type}"
-        os.makedirs(save_folder, exist_ok=True)
+        if modality == "all":
+            save_folder = f"results/{dataset}_{recognition_type}_pca{use_pca}_{model_type}"
+        else:
+            save_folder = f"results/uni_modal/{dataset}_{recognition_type}_{modality}_{model_type}"
     else:
-        save_folder = f"results/{recognition_type}_pca{use_pca}_{model_type}"
-        os.makedirs(save_folder, exist_ok=True)
+        if modality == "all":
+            save_folder = f"results/{recognition_type}_pca{use_pca}_{model_type}"
+        else:
+            save_folder = f"results/uni_modal/{recognition_type}_{modality}_{model_type}"
+    
+    # Append optional save folder appendix
+    if save_folder_app:
+        save_folder = save_folder + "_" + save_folder_app
 
-    results, categories = run_trial(dataset, recognition_type, hparams, folds2Test, verbose=1, plot=True, outputModel=outputModel, use_pca=use_pca, model_type=model_type)
-
+    os.makedirs(save_folder, exist_ok=True)
+    results, categories = run_trial(dataset, recognition_type, hparams, folds2Test, verbose=1, plot=True, outputModel=outputModel, use_pca=use_pca, model_type=model_type, modality=modality)
+    
     # Plot confusion matrix
     if plot_results:
         if recognition_type == "texture":
@@ -190,5 +196,46 @@ if __name__ == "__main__":
     hparam_hist.append([hprm for hprm in hparams.values()])
 
     save_results(results, folds2Test, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), hparam_hist, save_dir=save_folder, file_appendix=f'{dataset}_{recognition_type}_pca{use_pca}_{model_type}')
+    
+    return
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run training/evaluation with configurable options.")
+    parser.add_argument("--dataset", default="text&soft", choices=["text&soft", "texture", "softness"], help="Dataset to use")
+    parser.add_argument("--recognition-type", default="softness", choices=["texture", "softness"], help="Recognition target (overrides default for combined dataset)")
+    parser.add_argument("--use-pca", action="store_true", help="Enable PCA (only applies when modality is 'all')")
+    parser.add_argument("--modality", default="press", choices=["accel", "gyro", "press", "all"], help="Modality to evaluate")
+    parser.add_argument("--model-type", default="CNN-LSTM", choices=["CNN-LSTM", "CNN", "LSTM", "SVM", "RF", "LR", "KNN", "NB", "DT"], help="Model architecture to use")
+    parser.add_argument("--output-model", dest="output_model", action="store_true", help="Save trained model")
+    parser.add_argument("--no-plot", dest="plot_results", action="store_false", help="Disable plotting of results")
+    parser.set_defaults(plot_results=True)
+    parser.add_argument("--folds", type=int, default=5, help="Number of folds to run/evaluate")
+    parser.add_argument("--save-folder-app", dest="save_folder_app", default="", help="Optional appendix to append to the results save folder")
+
+    args = parser.parse_args()
+
+    dataset = args.dataset
+    # Default recognition type logic: for single-dataset choices it's the same, for combined default to 'softness' unless overridden
+    if dataset in ["texture", "softness"]:
+        recognition_type = dataset
+    else:
+        recognition_type = args.recognition_type if args.recognition_type in ["texture", "softness"] else "softness"
+
+    use_pca = args.use_pca
+    modality = args.modality
+    # PCA only applies to combined modality data
+    if modality != "all":
+        use_pca = False
+
+    model_type = args.model_type
+    outputModel = args.output_model
+    plot_results = args.plot_results if hasattr(args, "plot_results") else True
+
+    folds2Test = args.folds
+    if outputModel:
+        folds2Test = 1
+
+    save_folder_app = args.save_folder_app if hasattr(args, "save_folder_app") else ""
+    setup_and_run_trial(dataset, recognition_type, modality, folds2Test, outputModel, plot_results, use_pca, model_type, save_folder_app)
 
     print("Done")

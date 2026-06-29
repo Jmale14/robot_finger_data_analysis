@@ -47,10 +47,28 @@ def save_results(results, folds2Test, startTimeStamp, hparam_hist, save_dir='res
                          [results["std_acc"], results["std_f1"], results["std_prec"], results["std_rec"]]])
 
 
-def load_data(data_dir: str, data_type: str):
+def load_data(data_dir: str, data_type: str, modality: str):
     assert data_type in ['softness', 'texture'], "data_type must be either 'softness' or 'texture'"
+    assert modality in ['accel', 'gyro', 'press', 'all'], "modality must be one of 'accel', 'gyro', 'press', or 'all'"
     # To load normalized folds and scalers
     normalized_folds = joblib.load(data_dir+'/normalized_folds.pkl')
+    if modality != 'all':
+        for train_windows, train_labels, test_windows, test_labels in normalized_folds:
+            for i in range(len(train_windows)):
+                if modality == 'accel':
+                    train_windows[i] = train_windows[i][:, :3]
+                elif modality == 'gyro':
+                    train_windows[i] = train_windows[i][:, 3:6]
+                elif modality == 'press':
+                    train_windows[i] = train_windows[i][:, 6:7]
+            for i in range(len(test_windows)):
+                if modality == 'accel':
+                    test_windows[i] = test_windows[i][:, :3]
+                elif modality == 'gyro':
+                    test_windows[i] = test_windows[i][:, 3:6]
+                elif modality == 'press':
+                    test_windows[i] = test_windows[i][:, 6:7]
+
     scalers = joblib.load(data_dir+'/scalers.pkl')
     if data_type == 'texture':
         encoded_labels = joblib.load(data_dir+'/encoded_texture.pkl')

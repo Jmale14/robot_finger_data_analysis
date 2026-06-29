@@ -1,0 +1,137 @@
+[
+  {
+    "dataset": "text&soft",
+    "recognition_type": "texture",
+    "modality": "accel",
+    "use_pca": true,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+  {
+    "dataset": "text&soft",
+    "recognition_type": "texture",
+    "modality": "gyro",
+    "use_pca": false,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+  {
+    "dataset": "text&soft",
+    "recognition_type": "texture",
+    "modality": "press",
+    "use_pca": false,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+
+  {
+    "dataset": "text&soft",
+    "recognition_type": "softness",
+    "modality": "accel",
+    "use_pca": true,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+  {
+    "dataset": "text&soft",
+    "recognition_type": "softness",
+    "modality": "gyro",
+    "use_pca": false,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+  {
+    "dataset": "text&soft",
+    "recognition_type": "softness",
+    "modality": "press",
+    "use_pca": false,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+
+  {
+    "dataset": "softness",
+    "recognition_type": "softness",
+    "modality": "accel",
+    "use_pca": true,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+  {
+    "dataset": "softness",
+    "recognition_type": "softness",
+    "modality": "gyro",
+    "use_pca": false,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+  {
+    "dataset": "softness",
+    "recognition_type": "softness",
+    "modality": "press",
+    "use_pca": false,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+
+  {
+    "dataset": "texture",
+    "recognition_type": "texture",
+    "modality": "accel",
+    "use_pca": true,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+  {
+    "dataset": "texture",
+    "recognition_type": "texture",
+    "modality": "gyro",
+    "use_pca": false,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  },
+  {
+    "dataset": "texture",
+    "recognition_type": "texture",
+    "modality": "press",
+    "use_pca": false,
+    "model_type": "CNN-LSTM",
+    "outputModel": false,
+    "plot_results": true,
+    "folds": 5,
+    "save_folder_app": "_final"
+  }
+]

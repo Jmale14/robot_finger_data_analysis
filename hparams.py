@@ -43,3 +43,23 @@ hp_dict = { "texture_texture":
                 "HP_LSTM_UNITS": 64 }
 }
 
+abl_epochs = { "texture_texture":
+              {"accel": 130,
+                "gyro": 170,
+               "press": 110},
+              
+               "softness_softness":
+               {"accel": 100,
+                 "gyro": 170,
+                "press": 50},
+               
+               "text&soft_texture":
+               {"accel": 160,
+                 "gyro": 130,
+                "press": 150},
+
+                "text&soft_softness":
+                {"accel": 170,
+                  "gyro": 150,
+                 "press": 140}
+}

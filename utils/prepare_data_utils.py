@@ -24,6 +24,7 @@ def getSoftness(filename):
     return softness
 
 def trim_to_peaks(data, sampling_freq, plot=False):
+    # Trim the data to relevant portion based on signature spikes.
     pressure_data = -(data['pressure']-np.mean(data['pressure']))
     peaks = []
     prom_min = 100
