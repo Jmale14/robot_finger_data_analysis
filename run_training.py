@@ -202,15 +202,17 @@ def setup_and_run_trial(dataset, recognition_type, modality, folds2Test, outputM
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run training/evaluation with configurable options.")
     parser.add_argument("--dataset", default="text&soft", choices=["text&soft", "texture", "softness"], help="Dataset to use")
-    parser.add_argument("--recognition-type", default="softness", choices=["texture", "softness"], help="Recognition target (overrides default for combined dataset)")
-    parser.add_argument("--use-pca", action="store_true", help="Enable PCA (only applies when modality is 'all')")
-    parser.add_argument("--modality", default="press", choices=["accel", "gyro", "press", "all"], help="Modality to evaluate")
+    parser.add_argument("--recognition-type", default="texture", choices=["texture", "softness"], help="Recognition target (overrides default for combined dataset)")
+    parser.add_argument("--use-pca", dest="use_pca", action="store_true", help="Enable PCA (only applies when modality is 'all')")
+    parser.set_defaults(use_pca=True)
+    parser.add_argument("--modality", default="all", choices=["accel", "gyro", "press", "all"], help="Modality to evaluate")
     parser.add_argument("--model-type", default="CNN-LSTM", choices=["CNN-LSTM", "CNN", "LSTM", "SVM", "RF", "LR", "KNN", "NB", "DT"], help="Model architecture to use")
     parser.add_argument("--output-model", dest="output_model", action="store_true", help="Save trained model")
+    parser.set_defaults(output_model=True)
     parser.add_argument("--no-plot", dest="plot_results", action="store_false", help="Disable plotting of results")
     parser.set_defaults(plot_results=True)
     parser.add_argument("--folds", type=int, default=5, help="Number of folds to run/evaluate")
-    parser.add_argument("--save-folder-app", dest="save_folder_app", default="", help="Optional appendix to append to the results save folder")
+    parser.add_argument("--save-folder-app", dest="save_folder_app", default="uni_multi_factor_recog", help="Optional appendix to append to the results save folder")
 
     args = parser.parse_args()
 

@@ -6,15 +6,19 @@ import pandas as pd
 import seaborn as sn
 
 def plot_confusion_matrix(all_y_true, all_y_pred, categories=None, save_dir=None):
-    classes = np.unique(all_y_true)
-    num_classes = len(classes)
+    if categories is not None:
+        num_classes = len(categories[0])
+        classes = categories[0]
+    else:
+        num_classes = len(np.unique(all_y_true))
+        classes = np.unique(all_y_true)
 
     # Compute confusion matrix
     #if categories is not None:
     #    conf_matrix = confusion_matrix(all_y_true, all_y_pred, labels=categories)
     #    conf_mat_perc = confusion_matrix(all_y_true, all_y_pred, normalize='true', labels=categories)
     #else:
-    conf_matrix = confusion_matrix(all_y_true, all_y_pred)
+    conf_matrix = confusion_matrix(all_y_true, all_y_pred, labels=range(num_classes))
     conf_mat_perc = confusion_matrix(all_y_true, all_y_pred, normalize='true', labels=range(num_classes))
     # conf_mat_perc = conf_mat_perc*100
 
@@ -25,7 +29,7 @@ def plot_confusion_matrix(all_y_true, all_y_pred, categories=None, save_dir=None
     plt.title('Confusion Matrix')
     plt.colorbar()
 
-    classes = np.unique(all_y_true)
+    # classes = np.unique(all_y_true)
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)

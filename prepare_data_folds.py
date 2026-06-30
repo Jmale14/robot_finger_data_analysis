@@ -12,7 +12,7 @@ dataset_type = "texture" # "texture", "softness", "text&soft"
 sampling_freq = 50 # Hz
 window_size = 2 # Window size in seconds
 n_splits = 5 # Number of folds
-use_pca = False
+use_pca = True
 plot_example_seq = False
 
 # Specify the directory containing your CSV files
