@@ -1,4 +1,4 @@
-import set_env_opts
+from config import set_env_opts
 
 import os
 import numpy as np
@@ -7,7 +7,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_sc
 from utils.plot_training_results import plot_training_results
 from utils.plot_confusion_matrix import plot_confusion_matrix
 import datetime
-from hparams import hp_dict, abl_epochs
+from config.hparams import hp_dict, abl_epochs
 from utils.model_training_utils import time_divide_data, load_data, save_results
 import utils.model_definitions as model_defs
 import argparse

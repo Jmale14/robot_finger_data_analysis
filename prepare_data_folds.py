@@ -1,4 +1,4 @@
-import set_env_opts
+from config import set_env_opts
 
 import os
 import numpy as np
