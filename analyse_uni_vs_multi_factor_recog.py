@@ -17,23 +17,21 @@ def filter_texture_labels(windows, labels, categories):
     mask = np.isin(labels[:, 0], categories)
     return windows[mask], labels[mask]
 
-def prepare_data_for_evaluation(recognition_type, text_soft=False):
+def prepare_data_for_evaluation(recognition_type, text_soft=False, scalers_pcas="unimodal"):
     sampling_freq = 50 # Hz
     window_size = 2 # Window size in seconds
 
     if text_soft:
         data = load_csv_files([f"raw_data/{recognition_type}_only"], sampling_freq)
-        pcas = joblib.load(f"processed_data/{recognition_type}/pca_True/pcas.pkl")
-        #pcas = joblib.load(f"processed_data/text&soft/pca_True/pcas.pkl")
-        scalers = joblib.load(f"processed_data/{recognition_type}/pca_True/scalers.pkl")
-        #scalers = joblib.load(f"processed_data/text&soft/pca_True/scalers.pkl")
-    
     else:
         data = load_csv_files(["raw_data/softness&texture"], sampling_freq)
-        # pcas = joblib.load(f"processed_data/{recognition_type}/pca_True/pcas.pkl")
+    
+    if scalers_pcas == "text&soft":
         pcas = joblib.load(f"processed_data/text&soft/pca_True/pcas.pkl")
-        # scalers = joblib.load(f"processed_data/{recognition_type}/pca_True/scalers.pkl")
         scalers = joblib.load(f"processed_data/text&soft/pca_True/scalers.pkl")
+    else:
+        pcas = joblib.load(f"processed_data/{recognition_type}/pca_True/pcas.pkl")
+        scalers = joblib.load(f"processed_data/{recognition_type}/pca_True/scalers.pkl")
 
     windows, labels = create_windows(data, window_size*sampling_freq, overlap=0)
 
@@ -64,7 +62,7 @@ def prepare_data_for_evaluation(recognition_type, text_soft=False):
 
     return test_windows, test_labels_encoded, encoder.categories_
 
-def run_trial(recognition_type, text_soft=False):
+def run_trial(recognition_type, text_soft=False, scalers_pcas="unimodal"):
     # Lists to store results
     accuracy_scores = []
     rec_scores = []
@@ -74,7 +72,7 @@ def run_trial(recognition_type, text_soft=False):
     all_y_true = []
     all_y_pred = []
 
-    test_windows, test_labels_encoded, label_categories = prepare_data_for_evaluation(recognition_type, text_soft)
+    test_windows, test_labels_encoded, label_categories = prepare_data_for_evaluation(recognition_type, text_soft, scalers_pcas)
     data_folds = time_divide_data([[np.empty(0), [None], test_windows, test_labels_encoded]])
 
     # # Test on all data as we trained on separate unimodal data
@@ -140,7 +138,7 @@ def run_trial(recognition_type, text_soft=False):
     return results, label_categories
 
 
-def setup_and_run_trial(recognition_type, text_soft=False, plot_results=True, save_folder_app=""):
+def setup_and_run_trial(recognition_type, text_soft=False, plot_results=True, save_folder_app="", scalers_pcas="unimodal"):
     if text_soft:
         save_folder = f"results/uni_multi_factor_recog/text&soft_{recognition_type}"
     else:
@@ -150,7 +148,7 @@ def setup_and_run_trial(recognition_type, text_soft=False, plot_results=True, sa
         save_folder = save_folder + "_" + save_folder_app
 
     os.makedirs(save_folder, exist_ok=True)
-    results, categories = run_trial(recognition_type, text_soft)
+    results, categories = run_trial(recognition_type, text_soft, scalers_pcas)
     
     # Plot confusion matrix
     if plot_results:
@@ -165,20 +163,21 @@ def setup_and_run_trial(recognition_type, text_soft=False, plot_results=True, sa
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run training/evaluation with configurable options.")
-    parser.add_argument("--recognition-type", default="texture", choices=["texture", "softness"], help="Recognition target (overrides default for combined dataset)")
+    parser.add_argument("--recognition-type", default="softness", choices=["texture", "softness"], help="Recognition target (overrides default for combined dataset)")
     parser.add_argument("--no-plot", dest="plot_results", action="store_false", help="Disable plotting of results")
     parser.set_defaults(plot_results=True)
-    parser.add_argument("--text_soft", dest="text_soft", action="store_false", help="Texture and Softness base model")
+    parser.add_argument("--text_soft", dest="text_soft", action="store_false", help="Texture and Softness base model vs unimodal model")
     parser.set_defaults(text_soft=True)
-    parser.add_argument("--save-folder-app", dest="save_folder_app", default="", help="Optional appendix to append to the results save folder")
+    parser.add_argument("--save-folder-app", dest="save_folder_app", default="ScalersText_Soft", help="Optional appendix to append to the results save folder")
+    parser.add_argument("--scalers_pcas", default="text&soft", choices=["unimodal", "text&soft"], help="Choose which scalers and PCAs to use for evaluation")
 
     args = parser.parse_args()
 
     recognition_type = args.recognition_type
     plot_results = args.plot_results if hasattr(args, "plot_results") else True
     text_soft = args.text_soft if hasattr(args, "text_soft") else False
-
+    scalers_pcas = args.scalers_pcas 
     save_folder_app = args.save_folder_app if hasattr(args, "save_folder_app") else ""
-    setup_and_run_trial(recognition_type, text_soft, plot_results, save_folder_app)
+    setup_and_run_trial(recognition_type, text_soft, plot_results, save_folder_app, scalers_pcas)
 
     print("Done")
