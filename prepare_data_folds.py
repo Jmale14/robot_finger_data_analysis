@@ -8,11 +8,12 @@ from sklearn.preprocessing import OneHotEncoder
 from utils.prepare_data_utils import load_csv_files, split_into_folds, fit_pca, plot_pca, create_windows, normalize_windows
 from utils.plot_example_data import plot_example_data
 
-dataset_type = "texture" # "texture", "softness", "text&soft"
+dataset_type = "text&soft" # "texture", "softness", "text&soft"
 sampling_freq = 50 # Hz
 window_size = 2 # Window size in seconds
 n_splits = 5 # Number of folds
 use_pca = True
+save_pre_and_pca_data = True
 plot_example_seq = False
 
 # Specify the directory containing your CSV files
@@ -37,9 +38,14 @@ if plot_example_seq:
 normalized_folds = []
 scalers = []
 pcas = []
+if save_pre_and_pca_data:
+    normalized_folds_orig = []
 for train_windows, train_labels, test_windows, test_labels in folds:
     train_windows, train_scaler = normalize_windows(train_windows)
     test_windows, _ = normalize_windows(test_windows, scaler=train_scaler)
+
+    if save_pre_and_pca_data:
+        normalized_folds_orig.append((train_windows, train_labels, test_windows, test_labels))
 
     if use_pca:
         pca = fit_pca(train_windows)
@@ -67,14 +73,20 @@ encoded_softness = softness_encoder.transform(softness)
 
 # Save normalized folds and scalers
 save_dir = "processed_data"
-os.makedirs(f'{save_dir}/{dataset_type}/pca_{use_pca}', exist_ok=True)
-joblib.dump(normalized_folds, f'{save_dir}/{dataset_type}/pca_{use_pca}/normalized_folds.pkl')
-joblib.dump(scalers, f'{save_dir}/{dataset_type}/pca_{use_pca}/scalers.pkl')
-joblib.dump(encoded_texture, f'{save_dir}/{dataset_type}/pca_{use_pca}/encoded_texture.pkl')
-joblib.dump(labels_encoder, f'{save_dir}/{dataset_type}/pca_{use_pca}/labelsencoder.pkl')
-joblib.dump(encoded_softness, f'{save_dir}/{dataset_type}/pca_{use_pca}/encoded_softness.pkl')
-joblib.dump(softness_encoder, f'{save_dir}/{dataset_type}/pca_{use_pca}/softnessencoder.pkl')
+save_folder = f"{save_dir}/{dataset_type}/pca_{use_pca}"
+if save_pre_and_pca_data:
+    save_folder = f"{save_dir}/{dataset_type}/pca_{use_pca}/pre_and_pca_data"
+
+os.makedirs(save_folder, exist_ok=True)
+joblib.dump(normalized_folds, f'{save_folder}/normalized_folds.pkl')
+joblib.dump(scalers, f'{save_folder}/scalers.pkl')
+joblib.dump(encoded_texture, f'{save_folder}/encoded_texture.pkl')
+joblib.dump(labels_encoder, f'{save_folder}/labelsencoder.pkl')
+joblib.dump(encoded_softness, f'{save_folder}/encoded_softness.pkl')
+joblib.dump(softness_encoder, f'{save_folder}/softnessencoder.pkl')
 if use_pca:
-    joblib.dump(pcas, f'{save_dir}/{dataset_type}/pca_{use_pca}/pcas.pkl')
+    joblib.dump(pcas, f'{save_folder}/pcas.pkl')
+    if save_pre_and_pca_data:
+        joblib.dump(normalized_folds_orig, f'{save_folder}/normalized_folds_orig.pkl')
 
 print("Done preparing data")
