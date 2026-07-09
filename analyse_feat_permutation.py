@@ -5,7 +5,7 @@ import numpy as np
 import joblib
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 from tensorflow.keras.models import load_model
-from utils.permutation_importance import permutation_importance_sensor, print_perm_results, plot_perm_results, save_permutation_results
+from utils.permutation_importance import permutation_importance_sensor, print_perm_results, plot_perm_results, save_permutation_results, plot_permutation_importance
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.pipeline import Pipeline
@@ -220,11 +220,16 @@ def setup_and_run_trial(recognition_type, text_soft=False, feat_to_blank="None",
     results, categories = run_trial(recognition_type, text_soft, feat_to_blank, folds)
     
     if feat_to_blank == "permutation":
-        df = save_permutation_results(
-            results,
-            f"{save_folder}/permutation_importance.csv"
-        )
+        if text_soft:
+            df = save_permutation_results(results, f"{save_folder}/permutation_importance_TS_{recognition_type}.csv")
+        else:
+            df = save_permutation_results(results, f"{save_folder}/permutation_importance_{recognition_type}.csv")
         print(df)
+        plot_permutation_importance(
+            df,
+            save_path=f"{save_folder}/permutation_importance.png",
+            show=False,
+        )
     else:
         # Plot confusion matrix
         if plot_results:
@@ -249,7 +254,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     folds = 5
-    run_all_variants = False
+    run_all_variants = True
     plot_results = args.plot_results if hasattr(args, "plot_results") else True
     save_folder_app = args.save_folder_app if hasattr(args, "save_folder_app") else ""
     
@@ -262,8 +267,8 @@ if __name__ == "__main__":
         # Loop through all versions of the ablation study
         for recognition_type in ["texture", "softness"]:
             for text_soft in [False, True]:
-                # for feat_to_blank in ["None"]:
-                for feat_to_blank in ["accel", "gyro", "press"]:
+                for feat_to_blank in ["permutation"]:
+                # for feat_to_blank in ["accel", "gyro", "press"]:
                     print(f"Running trial for recognition_type={recognition_type}, text_soft={text_soft}, feat_to_blank={feat_to_blank}")
                     setup_and_run_trial(recognition_type, text_soft, feat_to_blank, plot_results, save_folder_app, folds)
 

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 from sklearn.metrics import accuracy_score, f1_score
+import matplotlib.pyplot as plt
 
 def evaluate_model(model, X, y_true):
     """
@@ -95,13 +96,16 @@ def permutation_importance_sensor(
         acc_scores = np.array(acc_scores)
         f1_scores = np.array(f1_scores)
 
+        importances_acc = baseline_acc - acc_scores
+        importances_f1 = baseline_f1 - f1_scores
+
         results[sensor_name] = {
-            "accuracy_mean": baseline_acc - acc_scores.mean(),
-            "accuracy_std": acc_scores.std(),
-            "f1_mean": baseline_f1 - f1_scores.mean(),
-            "f1_std": f1_scores.std(),
-            "accuracy_scores": acc_scores,
-            "f1_scores": f1_scores,
+            "accuracy_mean": importances_acc.mean(),
+            "accuracy_std": importances_acc.std(),
+            "accuracy_importances": importances_acc,
+            "f1_mean": importances_f1.mean(),
+            "f1_std": importances_f1.std(),
+            "f1_importances": importances_f1,
         }
     
     # Validate on no permutations
@@ -116,13 +120,16 @@ def permutation_importance_sensor(
     acc_scores = np.array(acc_scores)
     f1_scores = np.array(f1_scores)
 
+    importances_acc = baseline_acc - acc_scores
+    importances_f1 = baseline_f1 - f1_scores
+
     results["None"] = {
-        "accuracy_mean": baseline_acc - acc_scores.mean(),
-        "accuracy_std": acc_scores.std(),
-        "f1_mean": baseline_f1 - f1_scores.mean(),
-        "f1_std": f1_scores.std(),
-        "accuracy_scores": acc_scores,
-        "f1_scores": f1_scores,
+        "accuracy_mean": importances_acc.mean(),
+        "accuracy_std": importances_acc.std(),
+        "accuracy_importances": importances_acc,
+        "f1_mean": importances_f1.mean(),
+        "f1_std": importances_f1.std(),
+        "f1_importances": importances_f1,
     }
     
     return results
@@ -143,8 +150,6 @@ def print_perm_results(results):
         print()
 
 def plot_perm_results(results):
-    import matplotlib.pyplot as plt
-
     sensors = list(results.keys())
 
     acc_mean = [results[s]["accuracy_mean"] for s in sensors]
@@ -177,49 +182,29 @@ def plot_perm_results(results):
     plt.show()
 
 
+
 def save_permutation_results(all_fold_results, save_path):
-    """
-    Average permutation importance results across CV folds and save to CSV.
-
-    Parameters
-    ----------
-    all_fold_results : list
-        List of dictionaries returned by permutation_importance_sensor().
-
-    save_path : str
-        Path to output CSV.
-    """
-
-    sensors = all_fold_results[0].keys()
 
     rows = []
 
+    sensors = all_fold_results[0].keys()
+
     for sensor in sensors:
 
-        acc_mean = np.mean(
-            [fold[sensor]["accuracy_mean"] for fold in all_fold_results]
+        acc_importances = np.concatenate(
+            [fold[sensor]["accuracy_importances"] for fold in all_fold_results]
         )
 
-        acc_std = np.std(
-            [fold[sensor]["accuracy_mean"] for fold in all_fold_results],
-            ddof=1,
-        )
-
-        f1_mean = np.mean(
-            [fold[sensor]["f1_mean"] for fold in all_fold_results]
-        )
-
-        f1_std = np.std(
-            [fold[sensor]["f1_mean"] for fold in all_fold_results],
-            ddof=1,
+        f1_importances = np.concatenate(
+            [fold[sensor]["f1_importances"] for fold in all_fold_results]
         )
 
         rows.append({
             "sensor": sensor,
-            "accuracy_mean": acc_mean,
-            "accuracy_std": acc_std,
-            "f1_mean": f1_mean,
-            "f1_std": f1_std,
+            "accuracy_mean": acc_importances.mean(),
+            "accuracy_std": acc_importances.std(ddof=1),
+            "f1_mean": f1_importances.mean(),
+            "f1_std": f1_importances.std(ddof=1),
         })
 
     df = pd.DataFrame(rows)
@@ -228,3 +213,57 @@ def save_permutation_results(all_fold_results, save_path):
     df.to_csv(save_path, index=False)
 
     return df
+
+def plot_permutation_importance(
+        results_df,
+        save_path=None,
+        show=True,
+    ):
+        """
+        Plot permutation importance for Accuracy and F1.
+
+        Parameters
+        ----------
+        results_df : pd.DataFrame
+            DataFrame returned by save_permutation_results().
+
+        save_path : str or None
+            Path to save the figure. If None, the figure is not saved.
+
+        show : bool, default=True
+            Whether to display the figure.
+        """
+
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
+
+        # Accuracy
+        axes[0].bar(
+            results_df["sensor"],
+            results_df["accuracy_mean"],
+            yerr=results_df["accuracy_std"],
+            capsize=5,
+        )
+        axes[0].set_title("Accuracy")
+        axes[0].set_ylabel("Permutation Importance")
+        axes[0].grid(axis="y", linestyle="--", alpha=0.5)
+
+        # F1
+        axes[1].bar(
+            results_df["sensor"],
+            results_df["f1_mean"],
+            yerr=results_df["f1_std"],
+            capsize=5,
+        )
+        axes[1].set_title("F1 Score")
+        axes[1].grid(axis="y", linestyle="--", alpha=0.5)
+
+        plt.tight_layout()
+
+        if save_path is not None:
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            plt.savefig(save_path, dpi=300, bbox_inches="tight")
+
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)
