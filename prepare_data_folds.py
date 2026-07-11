@@ -4,16 +4,19 @@ import os
 import numpy as np
 import joblib
 from sklearn.preprocessing import OneHotEncoder
-
+import matplotlib.pyplot as plt
 from utils.prepare_data_utils import load_csv_files, split_into_folds, fit_pca, plot_pca, create_windows, normalize_windows
 from utils.plot_example_data import plot_example_data
 
 dataset_type = "text&soft" # "texture", "softness", "text&soft"
 sampling_freq = 50 # Hz
 window_size = 2 # Window size in seconds
+split_by_trial = True
 n_splits = 5 # Number of folds
+if split_by_trial:
+    n_splits = 3
 use_pca = True
-save_pre_and_pca_data = True
+save_pre_and_pca_data = False
 plot_example_seq = False
 
 # Specify the directory containing your CSV files
@@ -27,9 +30,20 @@ elif dataset_type == "text&soft":
 else:
     raise ValueError("Invalid dataset type. Choose from 'texture', 'softness', or 'text&soft'.")
 
-data = load_csv_files(directory, sampling_freq)
-windows, labels = create_windows(data, window_size*sampling_freq, overlap=0)
-folds = split_into_folds(windows, labels, n_splits)
+data = load_csv_files(directory, sampling_freq, split_by_trial)
+if split_by_trial:
+    folds = []
+    win_lab = []
+    labels = []
+    for data_fold in data:
+        win_lab.append(create_windows(data_fold, window_size*sampling_freq, overlap=0))
+    folds.append((np.vstack((np.array(win_lab[1][0]), np.array(win_lab[2][0]))), np.vstack((np.array(win_lab[1][1]), np.array(win_lab[2][1]))), win_lab[0][0], win_lab[0][1]))
+    folds.append((np.vstack((np.array(win_lab[0][0]), np.array(win_lab[2][0]))), np.vstack((np.array(win_lab[0][1]), np.array(win_lab[2][1]))), win_lab[1][0], win_lab[1][1]))
+    folds.append((np.vstack((np.array(win_lab[0][0]), np.array(win_lab[1][0]))), np.vstack((np.array(win_lab[0][1]), np.array(win_lab[1][1]))), win_lab[2][0], win_lab[2][1]))
+    labels = np.vstack((win_lab[0][1], win_lab[1][1], win_lab[2][1]))
+else:
+    windows, labels = create_windows(data, window_size*sampling_freq, overlap=0)
+    folds = split_into_folds(windows, labels, n_splits)
 
 if plot_example_seq:
     plot_example_data(folds)
@@ -72,7 +86,7 @@ encoded_softness = softness_encoder.transform(softness)
 
 
 # Save normalized folds and scalers
-save_dir = "processed_data"
+save_dir = "processed_data_3fold"
 save_folder = f"{save_dir}/{dataset_type}/pca_{use_pca}"
 if save_pre_and_pca_data:
     save_folder = f"{save_dir}/{dataset_type}/pca_{use_pca}/pre_and_pca_data"

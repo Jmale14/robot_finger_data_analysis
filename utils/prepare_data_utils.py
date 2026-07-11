@@ -42,7 +42,6 @@ def trim_to_peaks(data, sampling_freq, plot=False):
     end_idx = min(peaks[-1]+sampling_freq, data.shape[0])
 
     if plot:
-        plt.plot(pressure_data)
         plt.plot(peaks, pressure_data[peaks], "x")
         plt.axvline(x = start_idx, color = 'b')
         plt.axvline(x = end_idx, color = 'b')
@@ -95,8 +94,11 @@ def normalize_windows(windows, scaler=None):
     
     return normalized_windows, scaler
 
-def load_csv_files(directories, sampling_freq=50):
-    data_frames = []
+def load_csv_files(directories, sampling_freq=50, split_by_trial=False):
+    if split_by_trial:
+        data_frames = [[], [], []]
+    else:
+        data_frames = []
     required_columns = ["accx", "accy", "accz", "gx", "gy", "gz", "pressure"]
     total_files = 0
 
@@ -107,8 +109,17 @@ def load_csv_files(directories, sampling_freq=50):
         df['softness'] = softness
         return df
 
+    def add_dfs(label, softness, df, dfs, f=0):
+        if split_by_trial:
+            dfs[f].append(process_new_data(label, softness, df))
+        else:
+            dfs.append(process_new_data(label, softness, df))
+        return dfs
+
+
     for directory in directories:
         for filename in sorted(os.listdir(directory)):
+            f = 0
             if filename.startswith("material_"):
                 for fName in sorted(os.listdir(directory+"/"+filename)):
                     if (fName.startswith("M") and fName.endswith(".csv")) or (fName.startswith("EXP") and fName.endswith(".csv")):
@@ -116,28 +127,38 @@ def load_csv_files(directories, sampling_freq=50):
                         label = filename.split('_')[1]
                         softness = "None"
                         df = pd.read_csv(os.path.join(directory, filename, fName))
-                        data_frames.append(process_new_data(label, softness, df))
+                        data_frames = add_dfs(label, softness, df, data_frames, f)
                         total_files = total_files+1
+                        f = f+1
             if filename.endswith("_just_softness"):
                 for fName in sorted(os.listdir(directory+"/"+filename)):
                     if fName.endswith("delay150.csv"):
                         label = 18 # Add tape as material 18
                         softness = getSoftness(filename)
                         df = pd.read_csv(os.path.join(directory, filename, fName))
-                        data_frames.append(process_new_data(label, softness, df))
+                        data_frames = add_dfs(label, softness, df, data_frames, f)
                         total_files = total_files+1
+                        f = f+1
             if directory.endswith("softness&texture"):
                 for fabric in sorted(os.listdir(directory+"/"+filename)):
+                    f = 0
                     for fName in sorted(os.listdir(directory+"/"+filename+"/"+fabric)):
                         if fName.endswith("delay100.csv"):
                             label =  fabric.split('fabric')[1]
                             softness = getSoftness(filename)
                             df = pd.read_csv(os.path.join(directory, filename, fabric, fName))
-                            data_frames.append(process_new_data(label, softness, df))
+                            data_frames = add_dfs(label, softness, df, data_frames, f)
                             total_files = total_files+1
+                            f = f+1
 
     print(f"Total files used: {total_files}")
-    return pd.concat(data_frames, ignore_index=True)
+    if split_by_trial:
+        out_dfs = []
+        for l in data_frames:
+            out_dfs.append(pd.concat(l, ignore_index=True))
+    else:
+        out_dfs = pd.concat(data_frames, ignore_index=True)
+    return out_dfs
 
 def split_into_folds(windows, labels, n_splits):
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
