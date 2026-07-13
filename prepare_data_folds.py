@@ -13,11 +13,13 @@ sampling_freq = 50 # Hz
 window_size = 2 # Window size in seconds
 split_by_trial = True
 n_splits = 5 # Number of folds
-if split_by_trial:
-    n_splits = 3
 use_pca = True
 save_pre_and_pca_data = False
 plot_example_seq = False
+save_dir = "processed_data"
+if split_by_trial:
+    n_splits = 3
+    save_dir = save_dir+"_3fold"
 
 # Specify the directory containing your CSV files
 root_dir = "raw_data"
@@ -86,7 +88,6 @@ encoded_softness = softness_encoder.transform(softness)
 
 
 # Save normalized folds and scalers
-save_dir = "processed_data_3fold"
 save_folder = f"{save_dir}/{dataset_type}/pca_{use_pca}"
 if save_pre_and_pca_data:
     save_folder = f"{save_dir}/{dataset_type}/pca_{use_pca}/pre_and_pca_data"
