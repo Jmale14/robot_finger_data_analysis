@@ -213,7 +213,7 @@ def setup_and_run_trial(dataset, recognition_type, modality, folds2Test, outputM
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run training/evaluation with configurable options.")
     parser.add_argument("--dataset", default="text&soft", choices=["text&soft", "texture", "softness"], help="Dataset to use")
-    parser.add_argument("--recognition-type", default="softness", choices=["softness", "softness"], help="Recognition target (overrides default for combined dataset)")
+    parser.add_argument("--recognition-type", default="softness", choices=["texture", "softness"], help="Recognition target (overrides default for combined dataset)")
     parser.add_argument("--use-pca", dest="use_pca", action="store_true", help="Enable PCA (only applies when modality is 'all')")
     parser.set_defaults(use_pca=True)
     parser.add_argument("--modality", default="all", choices=["accel", "gyro", "press", "all", "feat_study"], help="Modality to evaluate")

@@ -1,5 +1,12 @@
 from config import set_env_opts
 
+"""Feature importance and ablation analysis for trained tactile recognition models.
+
+This script evaluates preprocessed, PCA-transformed test data using trained CNN-LSTM models.
+It supports feature blanking, permutation importance, and result export under
+`results/feat_importance_analysis/`.
+"""
+
 import os
 import numpy as np
 import joblib
@@ -244,11 +251,13 @@ def setup_and_run_trial(recognition_type, text_soft=False, feat_to_blank="None",
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run training/evaluation with configurable options.")
-    parser.add_argument("--recognition-type", default="texture", choices=["texture", "softness"], help="Recognition target (overrides default for combined dataset)")
+    parser.add_argument("--recognition-type", default="texture", choices=["texture", "softness"], help="Recognition target for the analysis.")
     parser.add_argument("--no-plot", dest="plot_results", action="store_false", help="Disable plotting of results")
     parser.set_defaults(plot_results=True)
-    parser.add_argument("--text_soft", dest="text_soft", action="store_false", help="Texture and Softness base model vs unimodal model")
+    parser.add_argument("--text-soft", dest="text_soft", action="store_false", help="Texture and Softness combined dataset vs unimodal dataset")
     parser.set_defaults(text_soft=True)
+    parser.add_argument("--all-variants", dest="run_all_variants", action="store_true", help="Run all recognition targets and both combined/unimodal variants")
+    parser.set_defaults(run_all_variants=False)
     parser.add_argument("--save-folder-app", dest="save_folder_app", default="", help="Optional appendix to append to the results save folder")
     parser.add_argument("--feat_to_blank", dest="feat_to_blank", default="permutation", choices=["accel", "gyro", "press", "permutation", "None"], help="Optional feature to blank out for ablation study")
     args = parser.parse_args()
