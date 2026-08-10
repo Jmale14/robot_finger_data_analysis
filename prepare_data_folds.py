@@ -14,7 +14,7 @@ window_size = 2 # Window size in seconds
 split_by_trial = False # If True, split data by trial (3 folds), else split into 5 folds
 n_splits = 5 # Number of folds
 use_pca = True
-save_pre_and_pca_data = False
+save_pre_and_pca_data = True # If True, save the normalized data before and after PCA
 plot_example_seq = False
 save_dir = "processed_data"
 if split_by_trial:

@@ -263,7 +263,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     folds = 5
-    run_all_variants = True
+    run_all_variants = args.run_all_variants if hasattr(args, "run_all_variants") else False
     plot_results = args.plot_results if hasattr(args, "plot_results") else True
     save_folder_app = args.save_folder_app if hasattr(args, "save_folder_app") else ""
     
