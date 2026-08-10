@@ -68,7 +68,7 @@ The scripts below are intended to be executed from the repository root.
 Example single training run:
 
 ```bash
-python run_training.py --dataset text&soft --recognition-type softness --modality all --model-type CNN-LSTM --use-pca --folds 5
+python run_training.py --dataset "text&soft" --recognition-type softness --modality all --model-type CNN-LSTM --use-pca --folds 5
 ```
 
 - `--dataset` supports `text&soft`, `texture`, or `softness`.
