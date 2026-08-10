@@ -11,7 +11,7 @@ from utils.plot_example_data import plot_example_data
 dataset_type = "text&soft" # "texture", "softness", "text&soft"
 sampling_freq = 50 # Hz
 window_size = 2 # Window size in seconds
-split_by_trial = True
+split_by_trial = False # If True, split data by trial (3 folds), else split into 5 folds
 n_splits = 5 # Number of folds
 use_pca = True
 save_pre_and_pca_data = False

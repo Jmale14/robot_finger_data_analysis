@@ -222,8 +222,8 @@ if __name__ == "__main__":
     parser.set_defaults(output_model=False)
     parser.add_argument("--no-plot", dest="plot_results", action="store_false", help="Disable plotting of results")
     parser.set_defaults(plot_results=True)
-    parser.add_argument("--folds", type=int, default=3, help="Number of folds to run/evaluate")
-    parser.add_argument("--save-folder-app", dest="save_folder_app", default="3_fold", help="Optional appendix to append to the results save folder")
+    parser.add_argument("--folds", type=int, default=5, help="Number of folds to run/evaluate")
+    parser.add_argument("--save-folder-app", dest="save_folder_app", default="", help="Optional appendix to append to the results save folder")
 
     args = parser.parse_args()
 
