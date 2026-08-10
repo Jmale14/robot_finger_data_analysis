@@ -90,7 +90,7 @@ bash run_multiple_trials.sh --config config/trials_example.json --delay 2 --log 
 - Comma-separated list example:
 
 ```bash
-bash run_multiple_trials.sh --datasets text&soft --recognition-types softness --modalities all --models CNN-LSTM,CNN --use-pca-options true,false --delay 2 --log results/trials_log.txt
+bash run_multiple_trials.sh --datasets "text&soft" --recognition-types softness --modalities all --models CNN-LSTM,CNN --use-pca-options true,false --delay 2 --log results/trials_log.txt
 ```
 
 - Notes:
