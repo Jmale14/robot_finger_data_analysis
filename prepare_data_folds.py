@@ -4,16 +4,22 @@ import os
 import numpy as np
 import joblib
 from sklearn.preprocessing import OneHotEncoder
-
+import matplotlib.pyplot as plt
 from utils.prepare_data_utils import load_csv_files, split_into_folds, fit_pca, plot_pca, create_windows, normalize_windows
 from utils.plot_example_data import plot_example_data
 
-dataset_type = "texture" # "texture", "softness", "text&soft"
+dataset_type = "text&soft" # "texture", "softness", "text&soft"
 sampling_freq = 50 # Hz
 window_size = 2 # Window size in seconds
+split_by_trial = False # If True, split data by trial (3 folds), else split into 5 folds
 n_splits = 5 # Number of folds
 use_pca = True
+save_pre_and_pca_data = False
 plot_example_seq = False
+save_dir = "processed_data"
+if split_by_trial:
+    n_splits = 3
+    save_dir = save_dir+"_3fold"
 
 # Specify the directory containing your CSV files
 root_dir = "raw_data"
@@ -26,9 +32,20 @@ elif dataset_type == "text&soft":
 else:
     raise ValueError("Invalid dataset type. Choose from 'texture', 'softness', or 'text&soft'.")
 
-data = load_csv_files(directory, sampling_freq)
-windows, labels = create_windows(data, window_size*sampling_freq, overlap=0)
-folds = split_into_folds(windows, labels, n_splits)
+data = load_csv_files(directory, sampling_freq, split_by_trial)
+if split_by_trial:
+    folds = []
+    win_lab = []
+    labels = []
+    for data_fold in data:
+        win_lab.append(create_windows(data_fold, window_size*sampling_freq, overlap=0))
+    folds.append((np.vstack((np.array(win_lab[1][0]), np.array(win_lab[2][0]))), np.vstack((np.array(win_lab[1][1]), np.array(win_lab[2][1]))), win_lab[0][0], win_lab[0][1]))
+    folds.append((np.vstack((np.array(win_lab[0][0]), np.array(win_lab[2][0]))), np.vstack((np.array(win_lab[0][1]), np.array(win_lab[2][1]))), win_lab[1][0], win_lab[1][1]))
+    folds.append((np.vstack((np.array(win_lab[0][0]), np.array(win_lab[1][0]))), np.vstack((np.array(win_lab[0][1]), np.array(win_lab[1][1]))), win_lab[2][0], win_lab[2][1]))
+    labels = np.vstack((win_lab[0][1], win_lab[1][1], win_lab[2][1]))
+else:
+    windows, labels = create_windows(data, window_size*sampling_freq, overlap=0)
+    folds = split_into_folds(windows, labels, n_splits)
 
 if plot_example_seq:
     plot_example_data(folds)
@@ -37,9 +54,14 @@ if plot_example_seq:
 normalized_folds = []
 scalers = []
 pcas = []
+if save_pre_and_pca_data:
+    normalized_folds_orig = []
 for train_windows, train_labels, test_windows, test_labels in folds:
     train_windows, train_scaler = normalize_windows(train_windows)
     test_windows, _ = normalize_windows(test_windows, scaler=train_scaler)
+
+    if save_pre_and_pca_data:
+        normalized_folds_orig.append((train_windows, train_labels, test_windows, test_labels))
 
     if use_pca:
         pca = fit_pca(train_windows)
@@ -66,15 +88,20 @@ encoded_softness = softness_encoder.transform(softness)
 
 
 # Save normalized folds and scalers
-save_dir = "processed_data"
-os.makedirs(f'{save_dir}/{dataset_type}/pca_{use_pca}', exist_ok=True)
-joblib.dump(normalized_folds, f'{save_dir}/{dataset_type}/pca_{use_pca}/normalized_folds.pkl')
-joblib.dump(scalers, f'{save_dir}/{dataset_type}/pca_{use_pca}/scalers.pkl')
-joblib.dump(encoded_texture, f'{save_dir}/{dataset_type}/pca_{use_pca}/encoded_texture.pkl')
-joblib.dump(labels_encoder, f'{save_dir}/{dataset_type}/pca_{use_pca}/labelsencoder.pkl')
-joblib.dump(encoded_softness, f'{save_dir}/{dataset_type}/pca_{use_pca}/encoded_softness.pkl')
-joblib.dump(softness_encoder, f'{save_dir}/{dataset_type}/pca_{use_pca}/softnessencoder.pkl')
+save_folder = f"{save_dir}/{dataset_type}/pca_{use_pca}"
+if save_pre_and_pca_data:
+    save_folder = f"{save_dir}/{dataset_type}/pca_{use_pca}/pre_and_pca_data"
+
+os.makedirs(save_folder, exist_ok=True)
+joblib.dump(normalized_folds, f'{save_folder}/normalized_folds.pkl')
+joblib.dump(scalers, f'{save_folder}/scalers.pkl')
+joblib.dump(encoded_texture, f'{save_folder}/encoded_texture.pkl')
+joblib.dump(labels_encoder, f'{save_folder}/labelsencoder.pkl')
+joblib.dump(encoded_softness, f'{save_folder}/encoded_softness.pkl')
+joblib.dump(softness_encoder, f'{save_folder}/softnessencoder.pkl')
 if use_pca:
-    joblib.dump(pcas, f'{save_dir}/{dataset_type}/pca_{use_pca}/pcas.pkl')
+    joblib.dump(pcas, f'{save_folder}/pcas.pkl')
+    if save_pre_and_pca_data:
+        joblib.dump(normalized_folds_orig, f'{save_folder}/normalized_folds_orig.pkl')
 
 print("Done preparing data")

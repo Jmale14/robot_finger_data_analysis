@@ -49,10 +49,10 @@ def save_results(results, folds2Test, startTimeStamp, hparam_hist, save_dir='res
 
 def load_data(data_dir: str, data_type: str, modality: str):
     assert data_type in ['softness', 'texture'], "data_type must be either 'softness' or 'texture'"
-    assert modality in ['accel', 'gyro', 'press', 'all'], "modality must be one of 'accel', 'gyro', 'press', or 'all'"
+    assert modality in ['accel', 'gyro', 'press', 'all', 'feat_study'], "modality must be one of 'accel', 'gyro', 'press', or 'all'"
     # To load normalized folds and scalers
     normalized_folds = joblib.load(data_dir+'/normalized_folds.pkl')
-    if modality != 'all':
+    if modality != 'all' and modality != 'feat_study':
         for train_windows, train_labels, test_windows, test_labels in normalized_folds:
             for i in range(len(train_windows)):
                 if modality == 'accel':
